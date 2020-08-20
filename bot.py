@@ -3,7 +3,7 @@ import keyboard
 import asyncio
 from discord.ext import commands
 
-TOKEN = 'NzQ0NjQ1NDE1ODQ4MjQ3MzI4.XzmPFQ.KQKoWqGMc18KUiLYkbNU6a1U120'
+TOKEN = ' << TOKEN HERE >> '
 client = commands.Bot(command_prefix = '')
 
 @client.event
