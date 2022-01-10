@@ -8,7 +8,7 @@ from pytube import YouTube
 from pytube import Search
 import io
 
-TOKEN = 'NzQ0NjQ1NDE1ODQ4MjQ3MzI4.XzmPFQ._TiSg19Z2A02aZR1ej9luB7G0G4'
+TOKEN = 
 client = commands.Bot(command_prefix = '')
 
 @client.event
