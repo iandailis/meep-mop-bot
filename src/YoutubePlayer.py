@@ -15,6 +15,7 @@ ytdl_format_options = {
 	'logtostderr': False,
 	'quiet': True,
 	'no_warnings': True,
+	'ignoreerrors': True,
 	'rm-cache-dir': True,
 	'default_search': 'auto',
 	'source_address': '0.0.0.0' # bind to ipv4 since ipv6 addresses cause issues 
@@ -41,7 +42,11 @@ class YoutubePlayer(commands.Cog):
 			else:
 				message = ""
 				for i in range(len(self.queue)):
-					message += str(i) + ": " + self.queue[i]['title'] + " <" + self.__getURL(self.queue[i]['id']) + ">\n"
+					nextLine = str(i) + ": " + self.queue[i]['title'] + " <" + self.__getURL(self.queue[i]['id']) + ">\n"
+					if (len(message + nextLine) > 2000):
+						await ctx.send(message)
+						message = ""
+					message += nextLine
 				await ctx.send(message)
 
 	@commands.command()
@@ -109,9 +114,11 @@ class YoutubePlayer(commands.Cog):
 			
 			# if a playlist was found, add the entire playlist
 			if 'entries' in audioMetadata:
+				initLength = len(self.queue)
 				for entry in audioMetadata['entries']:
-					self.queue.append(entry)
-				await ctx.send("added " + str(len(audioMetadata['entries'])) + " entries from " + arg[0])
+					if (entry != None):
+						self.queue.append(entry)
+				await ctx.send("added " + str(len(self.queue) - initLength) + " entries from " + arg[0])
 			else: # otherwise just add the one found entry
 				self.queue.append(audioMetadata)
 				await ctx.send(str(len(self.queue)-1) + ": " + self.__getURL(audioMetadata['id']))
