@@ -1,7 +1,7 @@
 import asyncio
 
 import discord
-import youtube_dl
+import yt_dlp
 
 from discord.ext import commands
 
@@ -172,7 +172,7 @@ class YoutubePlayer(commands.Cog):
 	
 	@staticmethod
 	def __search(arg):
-		with youtube_dl.YoutubeDL(ytdl_format_options) as ydl:
+		with yt_dlp.YoutubeDL(ytdl_format_options) as ydl:
 			try: # check if the argument was a video URL
 				get(arg)
 			except: # on exception, the argument is not a URL, so get the first search result
