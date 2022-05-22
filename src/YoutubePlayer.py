@@ -24,6 +24,8 @@ ffmpeg_options = {
 	'options': '-vn'
 }
 
+beforeArgs = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
+
 class YoutubePlayer(commands.Cog):
 	def __init__(self):
 		self.queue = []
@@ -134,10 +136,8 @@ class YoutubePlayer(commands.Cog):
 
 	async def __playAudio(self, ctx):
 		print("ok we go")
-
-		curAudio = self.__search(self.__getURL(self.queue[0]['id']))
 		# get the encoded audio player
-		player = discord.FFmpegOpusAudio(curAudio['url'], **ffmpeg_options)
+		player = discord.FFmpegOpusAudio(self.queue[0]['url'], **ffmpeg_options, before_options=beforeArgs)
 
 		# stop any playing audio first just in case
 		ctx.voice_client.stop()	
