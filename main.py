@@ -1,4 +1,6 @@
 import asyncio
+import nest_asyncio
+nest_asyncio.apply()
 
 import discord
 
@@ -9,7 +11,8 @@ from src.VoiceLines import VoiceLines
 
 class MeepMopBot:
 	def __init__(self):
-		self.bot = commands.Bot(command_prefix=commands.when_mentioned_or("meep"))
+		intents = discord.Intents.all()
+		self.bot = commands.Bot(command_prefix=commands.when_mentioned_or("meep"), intents=intents)
 		self.cogs = []
 
 		self.bot.remove_command('help')
@@ -30,19 +33,20 @@ class MeepMopBot:
 				except:
 					pass
 
-	def add_cog(self, cog):
+	async def add_cog(self, cog):
 		self.cogs.append(cog)
-		self.bot.add_cog(cog)
+		await self.bot.add_cog(cog)
 
-	def run(self, token):
-		self.bot.run(token)
+	async def run(self, token):
+		await self.bot.run(token)
 
+async def setup(token):
+	bot = MeepMopBot()
+	await bot.add_cog(YoutubePlayer())
+	await bot.add_cog(VoiceLines())
+	await bot.run(token)
 
 if (__name__ == "__main__"):
 	with open("token.txt", 'r') as f:
 		token = f.readlines()[0]
-
-	bot = MeepMopBot()
-	bot.add_cog(YoutubePlayer())
-	bot.add_cog(VoiceLines())
-	bot.run(token)
+	asyncio.run(setup(token))
