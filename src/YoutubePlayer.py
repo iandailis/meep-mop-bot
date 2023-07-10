@@ -32,6 +32,38 @@ class YoutubePlayer(commands.Cog):
 		self.queue = []
 		self.currentAudioTask = 0
 		self.vc = 0
+		self.results = []
+		self.loop = False
+
+	@commands.command()
+	async def loop(self, ctx):
+		print("loop")
+		async with ctx.typing():
+			if (self.loop):
+				self.loop = False
+				await ctx.send("loop disabled")
+			else:
+				self.loop = True
+				await ctx.send("loop enabled")
+
+	@commands.command()
+	async def search(self, ctx, *arg):
+		print("search" + str(arg))
+		async with ctx.typing():
+			query = " ".join(word for word in arg)
+			with yt_dlp.YoutubeDL(ytdl_format_options) as ydl:
+				self.results = ydl.extract_info(f"ytsearch10:{arg}", download=False)['entries']
+						
+			message = ""
+			for i in range(10):
+				nextLine = f"""{i}) {self.results[i]['title']} <{self.__getURL(self.results[i]['id'])}>\n"""
+				if (len(message + nextLine) > 2000):
+					await ctx.send(message)
+					message = ""
+				message += nextLine
+			await ctx.send(message)
+
+
 
 	@commands.command()
 	async def queue(self, ctx, *arg):
@@ -42,7 +74,7 @@ class YoutubePlayer(commands.Cog):
 			else:
 				message = ""
 				for i in range(len(self.queue)):
-					nextLine = str(i) + ": " + self.queue[i]['title'] + " <" + self.__getURL(self.queue[i]['id']) + ">\n"
+					nextLine = f"""{i}: {self.queue[i]['title']} <{self.__getURL(self.queue[i]['id'])}> [{self.queue[i]['duration']//60}:{self.queue[i]['duration']%60}]\n"""
 					if (len(message + nextLine) > 2000):
 						await ctx.send(message)
 						message = ""
@@ -85,11 +117,10 @@ class YoutubePlayer(commands.Cog):
 	async def stop(self, ctx):
 		async with ctx.typing():
 			print("stop")
-			if (self.currentAudioTask):	
-				self.queue = []
+			self.queue = []
+			if (self.currentAudioTask):
 				self.currentAudioTask.cancel()
-			else:
-				await ctx.voice_client.disconnect()
+			await ctx.voice_client.disconnect()
 	
 	@commands.command()
 	async def skip(self, ctx):
@@ -100,6 +131,8 @@ class YoutubePlayer(commands.Cog):
 
 			else: # cancel the task, skipping the song
 				await ctx.send("skipped " + self.queue[0]['title'])
+				if (self.loop):
+					self.queue.pop(0)
 				self.currentAudioTask.cancel()
 
 	@commands.command()
@@ -108,9 +141,12 @@ class YoutubePlayer(commands.Cog):
 		async with ctx.typing(): # bot types while finding audio
 			# parse arg list into space separated string
 			query = " ".join(word for word in arg)
-			
+
 			# get the audio data
-			audioMetadata = self.__search(query)
+			if len(query) == 1 and query[0].isdigit() and len(self.results) > 0:
+				audioMetadata = self.results[int(query[0])]
+			else:
+				audioMetadata = self.__search(query)
 			
 			# if a playlist was found, add the entire playlist
 			if 'entries' in audioMetadata:
@@ -121,13 +157,17 @@ class YoutubePlayer(commands.Cog):
 				await ctx.send("added " + str(len(self.queue) - initLength) + " entries from " + arg[0])
 			else: # otherwise just add the one found entry
 				self.queue.append(audioMetadata)
-				await ctx.send(str(len(self.queue)-1) + ": " + self.__getURL(audioMetadata['id']))
+				await ctx.send(f"""{len(self.queue)-1}: {audioMetadata['title']} <{self.__getURL(audioMetadata['id'])}> [{audioMetadata['duration']//60}:{audioMetadata['duration']%60}]""")
 
 		# connect to a voice client if not connected already
 		if ctx.voice_client is None:
 			await self.vc.connect()
 			# create the audio player task
 			asyncio.get_event_loop().create_task(self.__player(ctx))
+
+	@commands.command()
+	async def p(self, ctx, *arg):
+		await self.play(ctx, *arg)
 
 	async def __player(self, ctx):
 		while (len(self.queue) > 0):
@@ -159,14 +199,17 @@ class YoutubePlayer(commands.Cog):
 
 		# remove self from the queue
 		try:
-			self.queue.pop(0)
+			if (self.loop == False):
+				self.queue.pop(0)
 		except IndexError: # needed so stop doesn't cause an exception
 			pass
 
 	@staticmethod
 	def getCommands():
 		commands = [
-			"play <query or link to video/playlist> -- adds a youtube video or playlist to a queue then plays it",
+			"search <query> -- get the first 10 search results",
+			"play <query, search index, or link to video/playlist> -- adds a youtube video or playlist to a queue then plays it",
+			"loop -- toggle loop (the current song repeats when it ends)"
 			"queue -- see the current play queue",
 			"move <index> -- move an entry to the top of the queue",
 			"skip --  skips the currently playing video",
@@ -194,7 +237,10 @@ class YoutubePlayer(commands.Cog):
 		return video
 
 	# these directives mean that the below function is called before any of these functions
+	@p.before_invoke
 	@play.before_invoke
+	@loop.before_invoke
+	@search.before_invoke
 	@queue.before_invoke
 	@move.before_invoke
 	@skip.before_invoke

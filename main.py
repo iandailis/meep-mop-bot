@@ -12,7 +12,7 @@ from src.VoiceLines import VoiceLines
 class MeepMopBot:
 	def __init__(self):
 		intents = discord.Intents.all()
-		self.bot = commands.Bot(command_prefix=commands.when_mentioned_or("meep"), intents=intents)
+		self.bot = commands.Bot(command_prefix=(["meep", "m"]), intents=intents)
 		self.cogs = []
 
 		self.bot.remove_command('help')
